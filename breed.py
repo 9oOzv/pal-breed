@@ -168,25 +168,50 @@ def group_represented(breed, g):
     return False
 
 
-def cmp_breeds(b1, b2):
-    if isinstance(b1, int) and not isinstance(b2, int):
-        return -1
-    if not isinstance(b1, int) and isinstance(b2, int):
-        return 1
-    if isinstance(b1, int) and isinstance(b2, int):
-        if names[b1] < names[b2]:
-            return -1
-        if names[b1] > names[b2]:
-            return 1
+def num_breeds(b: Breed | int):
+    if not isinstance(b, Breed):
         return 0
-    if b1.depth < b2.depth:
+    return 1 + num_breeds(b.parent1) + num_breeds(b.parent2)
+
+
+def breed_depth(b: Breed | int):
+    if not isinstance(b, Breed):
+        return 0
+    return b.depth
+
+
+def cmp_names(b1: Breed | int, b2: Breed | int):
+    if not (isinstance(b1, int) and isinstance(b2,int)):
+        return 0
+    if n1 < n2:
         return -1
-    if b1.depth > b2.depth:
+    if n2 < n1:
         return 1
-    parent1_cmp = cmp_breeds(b1.parent1, b2.parent1)
-    if parent1_cmp != 0:
-        return parent1_cmp
-    return cmp_breeds(b1.parent2, b2.parent2)
+
+def cmp_numbreeds(b1: Breed | int, b2: Breed | int):
+    if (n1 := num_breeds(b1)) < (n2 := num_breeds(b2)):
+        return -1
+    elif n2 < n1:
+        return 1
+    return 0
+
+
+def cmp_depth(b1: Breed | int, b2: Breed | int):
+    if (n1 := breed_depth(b1)) < (n2 := breed_depth(b2)):
+        return -1
+    elif n2 < n1:
+        return 1
+    return 0
+
+
+def cmp_breeds(b1, b2):
+    if (cmp := cmp_numbreeds(b1, b2)) != 0:
+        return cmp
+    if (cmp := cmp_depth(b1, b2)) != 0:
+        return cmp
+    if (cmp := cmp_names(b1, b2)) != 0:
+        return cmp
+    return 0
 
 
 def parse_names(names: str | list[str]):
