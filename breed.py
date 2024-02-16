@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import time
 import random
 import math
@@ -81,32 +82,33 @@ def _breed(X: list[int | Breed], Y: list[int | Breed]):
     return [z for z in Z if z.offspring is not None]
 
 
-def breed(X: list[int], Y: list[int], Z: list[int], W: list[int] = None):
+def breed(X: list[int], Y: list[int], Z: list[int] | None = None, W: list[int] | None = None):
     XY = _breed(X, Y)
-    XZ = _breed(X, Z)
-    YZ = _breed(Y, Z)
-    if W:
-        XW = _breed(X, W)
-        YW = _breed(Y, W)
-        ZW = _breed(Z, W)
-    YZ_X = _breed(YZ, X)
-    XY_Z = _breed(XY, Z)
-    if W:
-        XY_W = _breed(XY, W)
-        XZ_W = _breed(XZ, W)
-        YZ_W = _breed(YZ, W)
-        ZW_X = _breed(ZW, X)
-        ZW_Y = _breed(ZW, Y)
-        XY_Z_W = _breed(XY_Z, W)
-        XY_W_Z = _breed(XY_W, Z)
-        XZ_W_Y = _breed(XZ_W, Y)
-        YZ_X_W = _breed(YZ_X, W)
-        YZ_W_X = _breed(YZ_W, X)
-        ZW_X_Y = _breed(ZW_X, Y)
-        ZW_Y_X = _breed(ZW_Y, X)
-        XY_ZW = _breed(XY, ZW)
-        XZ_YW = _breed(XZ, YW)
-        XW_YZ = _breed(XW, YZ)
+    if Z:
+        XZ = _breed(X, Z)
+        YZ = _breed(Y, Z)
+        if W:
+            XW = _breed(X, W)
+            YW = _breed(Y, W)
+            ZW = _breed(Z, W)
+        YZ_X = _breed(YZ, X)
+        XY_Z = _breed(XY, Z)
+        if W:
+            XY_W = _breed(XY, W)
+            XZ_W = _breed(XZ, W)
+            YZ_W = _breed(YZ, W)
+            ZW_X = _breed(ZW, X)
+            ZW_Y = _breed(ZW, Y)
+            XY_Z_W = _breed(XY_Z, W)
+            XY_W_Z = _breed(XY_W, Z)
+            XZ_W_Y = _breed(XZ_W, Y)
+            YZ_X_W = _breed(YZ_X, W)
+            YZ_W_X = _breed(YZ_W, X)
+            ZW_X_Y = _breed(ZW_X, Y)
+            ZW_Y_X = _breed(ZW_Y, X)
+            XY_ZW = _breed(XY, ZW)
+            XZ_YW = _breed(XZ, YW)
+            XW_YZ = _breed(XW, YZ)
     if W:
         breeds = [
             *XY,
@@ -133,13 +135,17 @@ def breed(X: list[int], Y: list[int], Z: list[int], W: list[int] = None):
             *XZ_YW,
             *XW_YZ,
         ]
-    else:
+    elif Z:
         breeds = [
             *XY,
             *XZ,
             *YZ,
             *XY_Z,
             *YZ_X,
+        ]
+    else:
+        breeds = [
+            *XY,
         ]
     return breeds
 
@@ -185,7 +191,7 @@ def cmp_breeds(b1, b2):
 
 def parse_names(names: str | list[str]):
     if isinstance(names, str):
-        return palid(fuzzy_pal(names))
+        return [indice[fuzzy_pal(names)]]
     groups = []
     ids = [indice[fuzzy_pal(n)] for n in names]
     return ids
