@@ -236,6 +236,7 @@ def run(
             [names1, names2, names3, names4]
                 if names is not None
     ]
+    filter_groups=[g for g in groups]
     # Include at max 1 extra (any) pal in the breed chain
     n = len(groups)
     while len(groups) < min(n + 1, 4):
@@ -245,7 +246,7 @@ def run(
     # Calculate
     breeds = filter_sort_breeds(
         breed(*groups),
-        groups,
+        filter_groups,
         target
     )
     for b in breeds:
