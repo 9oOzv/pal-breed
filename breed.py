@@ -39,50 +39,71 @@ power_map = [
     closest(i) for i in range(0, 1501)
 ]
 
+gender_marks = {
+    0: '',
+    1: '♀',
+    -1: '♂'
+}
 
 @dataclass
-class Breed:
-    parent1: int | Self
-    parent2: int | Self
-    offspring: int
-    depth: int = 1
+class Pal:
+    index: int
+    parent1: Self | None = None
+    parent2: Self | None = None
+    gender: int = 0
 
     def __init__(
             self,
-            parent1: int | Self,
-            parent2: int | Self,
-            offspring: int):
+            index: int,
+            gender: int = 0,
+            parent1: int | Self = None,
+            parent2: int | Self = None):
         self.parent1 = parent1
         self.parent2 = parent2
-        self.offspring = offspring
-        self.depth = max(
-            parent1.depth + 1 if isinstance(parent1, Breed) else 1,
-            parent2.depth + 1 if isinstance(parent2, Breed) else 1
+        self.index = index
+        self.gender = gender
+
+    @property
+    def num_breeds(self):
+        return (
+            (1 + self.parent1.num_breeds if self.parent1 else 0)
+            + (self.parent2.num_breeds if self.parent2 else 0)
+        )
+
+    @property
+    def breed_depth(self):
+        return max(
+            self.parent1.breed_depth + 1 if self.parent1 else 0,
+            self.parent2.breed_depth + 1 if self.parent2 else 0
         )
 
     def __repr__(self):
-        p1 = f'({self.parent1})' if isinstance(self.parent1, Breed) else names[self.parent1]
-        p2 = f'({self.parent2})' if isinstance(self.parent2, Breed) else names[self.parent2]
-        return f'{p1} + {p2} -> {names[self.offspring]}'
+        if self.parent1:
+            return f'({self.parent1} + {self.parent2}) -> {names[self.index]}{gender_marks[self.gender]}'
+        else:
+            return f'{names[self.index]}{gender_marks[self.gender]}'
 
 
-def calculate_offspring(pal1: int | Breed, pal2: int | Breed):
-    index1 = pal1.offspring if isinstance(pal1, Breed) else pal1
-    index2 = pal2.offspring if isinstance(pal2, Breed) else pal2
+def calculate_offspring(pal1: Pal, pal2: Pal):
+    if pal1.gender != 0 and pal2.gender != 0:
+        if pal1.gender == pal2.gender:
+            return None
+    index1 = pal1.index if isinstance(pal1, Pal) else pal1
+    index2 = pal2.index if isinstance(pal2, Pal) else pal2
     raw = math.floor((powers[index1] + powers[index2] + 1) / 2)
-    return Breed(
+    return Pal(
+        power_map[raw],
         parent1=pal1,
-        parent2=pal2,
-        offspring=power_map[raw]
+        parent2=pal2
     )
 
 
-def _breed(X: list[int | Breed], Y: list[int | Breed]):
+def _breed(X: list[int | Pal], Y: list[int | Pal]):
     Z = [calculate_offspring(x, y) for x in X for y in Y]
-    return [z for z in Z if z.offspring is not None]
+    return [z for z in Z if z is not None]
 
 
-def breed(X: list[int], Y: list[int], Z: list[int] | None = None, W: list[int] | None = None):
+def breed(X: list[Pal], Y: list[Pal], Z: list[Pal] | None = None, W: list[Pal] | None = None):
     XY = _breed(X, Y)
     if Z:
         XZ = _breed(X, Z)
@@ -150,64 +171,76 @@ def breed(X: list[int], Y: list[int], Z: list[int] | None = None, W: list[int] |
     return breeds
 
 
-def fuzzy_pal(name):
+def fuzzy_name(name):
     ranking = [difflib.SequenceMatcher(None, n, name.lower()).ratio() for n in names]
     i = ranking.index(max(ranking))
     return names[i]
 
 
-def group_represented(breed, g):
-    if breed.parent1 in g:
-        return True
-    if breed.parent2 in g:
-        return True
-    if isinstance(breed.parent1, Breed) and group_represented(breed.parent1, g):
-        return True
-    if isinstance(breed.parent2, Breed) and group_represented(breed.parent2, g):
-        return True
-    return False
-
-
-def num_breeds(b: Breed | int):
-    if not isinstance(b, Breed):
+def fuzzy_gender(name):
+    if 'F' in name:
+        return 1
+    if 'M' in name:
+        return -1
+    else:
         return 0
-    return 1 + num_breeds(b.parent1) + num_breeds(b.parent2)
+
+def fuzzy_pal(name):
+    return Pal(
+        indice[fuzzy_name(name)],
+        gender = fuzzy_gender(name)
+    )
 
 
-def breed_depth(b: Breed | int):
-    if not isinstance(b, Breed):
-        return 0
-    return b.depth
+def group_represented(pal: Pal | None, group: list[Pal]):
+    if pal is None:
+        return False
+    g_indice = [p.index for p in group]
+    if pal.parent1:
+        return (
+            group_represented(pal.parent1, group)
+            or group_represented(pal.parent2, group)
+        )
+    for p in group:
+        if p.index == pal.index:
+            if p.gender == 0:
+                return True
+            if pal.gender == 0:
+                return True
+            if p.gender == pal.gender:
+                return True
 
 
-def cmp_names(b1: Breed | int, b2: Breed | int):
-    if not (isinstance(b1, int) and isinstance(b2,int)):
-        return 0
+def cmp_names(p1: Pal, p2: Pal):
+    n1 = str(p1)
+    n2 = str(p2)
     if n1 < n2:
         return -1
     if n2 < n1:
         return 1
+    return 0
 
-def cmp_numbreeds(b1: Breed | int, b2: Breed | int):
-    if (n1 := num_breeds(b1)) < (n2 := num_breeds(b2)):
+
+def cmp_numbreeds(p1: Pal, p2: Pal):
+    if p1.num_breeds < p2.num_breeds:
         return -1
-    elif n2 < n1:
+    elif p2.num_breeds < p1.num_breeds:
         return 1
     return 0
 
 
-def cmp_depth(b1: Breed | int, b2: Breed | int):
-    if (n1 := breed_depth(b1)) < (n2 := breed_depth(b2)):
+def cmp_breed_depth(p1: Pal, p2: Pal):
+    if p1.breed_depth < p2.breed_depth:
         return -1
-    elif n2 < n1:
+    elif p2.breed_depth < p1.breed_depth:
         return 1
     return 0
 
 
-def cmp_breeds(b1, b2):
+def cmp_breeds(b1: Pal, b2: Pal):
     if (cmp := cmp_numbreeds(b1, b2)) != 0:
         return cmp
-    if (cmp := cmp_depth(b1, b2)) != 0:
+    if (cmp := cmp_breed_depth(b1, b2)) != 0:
         return cmp
     if (cmp := cmp_names(b1, b2)) != 0:
         return cmp
@@ -216,28 +249,32 @@ def cmp_breeds(b1, b2):
 
 def parse_names(names: str | list[str]):
     if isinstance(names, str):
-        return [indice[fuzzy_pal(names)]]
-    groups = []
-    ids = [indice[fuzzy_pal(n)] for n in names]
-    return ids
+        return [ fuzzy_pal(names) ]
+    return [ fuzzy_pal(n) for n in names ]
 
-def print_request(target, groups):
-    print(f'target:\n    {names[target] if target else "<any>"}')
+
+def print_request(target: Pal, groups: list[list[Pal]]):
+    print(f'target:\n    {target} if target else "<any>"')
     for i, g in enumerate(groups):
-        names_ = [names[p] for p in g]
-        if len(names_) > 16:
-            print(f'group {i}:\n    ' + ", ".join(names_))
+        if len(g) > 16:
+                print(
+                    f'group {i}:\n    '
+                    + ", ".join([str(p) for p in g])
+                )
         else:
-            print(f'group {i}:\n    ' + "\n    ".join(names_))
+            print(
+                f'group {i}:\n    '
+                + "\n    ".join([str(p) for p in g])
+            )
 
 
 def parse_target(target):
-    return indice[fuzzy_pal(target)] if target else None
+    return fuzzy_pal(target) if target else None
 
 
-def filter_sort_breeds(breeds, groups, target):
+def filter_sort_breeds(breeds:list[Pal], groups:list[list[Pal]], target:Pal):
     if target:
-        breeds = [b for b in breeds if b.offspring == target]
+        breeds = [b for b in breeds if b.index == target.index]
     for g in groups:
         breeds = [b for b in breeds if group_represented(b, g)]
     return sorted(
@@ -252,7 +289,9 @@ def run(
         names1: str | list[str] | None = None,
         names2: str | list[str] | None = None,
         names3: str | list[str] | None = None,
-        names4: str | list[str] | None = None):
+        names4: str | list[str] | None = None,
+        print_request_only: bool = False):
+    print(names3)
     all_pals = list(range(0, len(data)))
     # fuzzy match given pal names/lists
     target = parse_target(target)
@@ -265,12 +304,15 @@ def run(
     # Include at max 1 extra (any) pal in the breed chain
     n = len(groups)
     while len(groups) < min(n + 1, 4):
-        groups.append(all_pals)
+        groups.append([Pal(index) for index in all_pals])
     # Print the requested target and pal groups
     print_request(target, groups)
+    if print_request_only:
+        return
     # Calculate
+    breeds = breed(*groups)
     breeds = filter_sort_breeds(
-        breed(*groups),
+        breeds,
         filter_groups,
         target
     )
