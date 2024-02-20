@@ -1,17 +1,17 @@
 # pal-breed
 
-A script to calculate breeding paths to a target with specified inherited pals (up to 4 pals).
+A script to calculate breeding paths to a target with inherited traits from specific groups.
 
 `pip install -r requirements.txt`
 
-`python breed.py --target=<target> --names1=<pal1,pal2,pal3...> --names2=<pal1,pal2,pal3...> ...`
+See `python3 breed.py --help` for instructions
 
-The paths will have at least one pal from each group.
+# data
 
-* Given 1 or 2 name groups, the script will print breding chains containing up to 3 pals.
-* Given 3 or 4 name groups, the script will print breeding chains containing up to 4 pals.
-* If given 3 or 4 groups with too many pals in each, the script might crash/take too long 
-  because of too many possible combinations
+`data.json` containing the breed map and pal names can be generated with.
 
-Results are sorted so that shortest/shallowest breed paths are at the bottom.
+```
+python3 data.py > data.json
+```
 
+Though the file is already included in this repo and you should not need to do this.

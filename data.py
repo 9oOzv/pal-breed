@@ -1,5 +1,19 @@
+#!/usr/bin/env python3
 import json
 import sys
+from dataclasses import dataclass
+import math
+
+
+@dataclass
+class Pal:
+    index: int
+    name: str
+    power: int
+    tiebreak: int
+    unique: bool
+    only_same: bool
+
 
 breed_powers = {
     'chikipi': 1500,
@@ -102,7 +116,7 @@ breed_powers = {
     'kingpaca': 470,
     'wumpo': 460,
     'sibelyx': 450,
-    'ice kingpaca': 440,
+    'kingpaca cryst': 440,
     'mossanda': 430,
     'nitewing': 420,
     'sweepa': 410,
@@ -253,7 +267,7 @@ tiebreak_order = [
     'blazehowl',
     'blazehowl noct',
     'kingpaca',
-    'ice kingpaca',
+    'kingpaca cryst',
     'gumoss',
     'gumoss (special)',
     'swee',
@@ -283,7 +297,7 @@ tiebreak_order = [
     'rooby'
 ]
 
-specials = set([
+uniques = set([
     'relaxaurus lux',
     'incineram noct',
     'mau cryst',
@@ -296,7 +310,7 @@ specials = set([
     'dinossom lux',
     'jolthog cryst',
     'frostallion noct',
-    'ice kingpaca',
+    'kingpaca cryst',
     'lyleen noct',
     'leezpunk ignis',
     'blazehowl noct',
@@ -314,14 +328,131 @@ specials = set([
     'shadowbeak',
 ])
 
-data = [
-    {
-        "index": i,
-        "name": name,
-        "power": power,
-        "tiebreak_order": tiebreak_order.index(name),
-        "special": name in specials
-    } for i, (name, power) in enumerate(breed_powers.items())
+unique_combos = {
+    ('relaxaurus'  ,'sparkit'   ): 'relaxaurus lux',
+    ('incineram'   ,'maraith'   ): 'incineram noct',
+    ('mau'         ,'pengullet' ): 'mau cryst',
+    ('vanwyrm'     ,'foxcicle'  ): 'vanwyrm cryst',
+    ('eikthyrdeer' ,'hangyu'    ): 'eikthyrdeer terra',
+    ('elphidran'   ,'surfent'   ): 'elphidran aqua',
+    ('pyrin'       ,'katress'   ): 'pyrin noct',
+    ('mammorest'   ,'wumpo'     ): 'mammorest cryst',
+    ('mossanda'    ,'grizzbolt' ): 'mossanda lux',
+    ('dinossom'    ,'rayhound'  ): 'dinossom lux',
+    ('jolthog'     ,'pengullet' ): 'jolthog cryst',
+    ('frostallion' ,'helzephyr' ): 'frostallion noct',
+    ('kingpaca'    ,'reindrix'  ): 'kingpaca cryst',
+    ('lyleen'      ,'menasting' ): 'lyleen noct',
+    ('leezpunk'    ,'flambelle' ): 'leezpunk ignis',
+    ('blazehowl'   ,'felbat'    ): 'blazehowl noct',
+    ('robinquill'  ,'fuddler'   ): 'robinquill terra',
+    ('broncherry'  ,'fuack'     ): 'broncherry aqua',
+    ('surfent'     ,'dumud'     ): 'surfent terra',
+    ('gobfin'      ,'rooby'     ): 'gobfin ignis',
+    ('suzaku'      ,'jormuntide'): 'suzaku aqua',
+    ('reptyro'     ,'foxcicle'  ): 'reptyro cryst',
+    ('hangyu'      ,'swee'      ): 'hangyu cryst',
+    ('mossanda'    ,'petallia'  ): 'lyleen',
+    ('vanwyrm'     ,'anubis'    ): 'faleris',
+    ('mossanda'    ,'rayhound'  ): 'grizzbolt',
+    ('grizzbolt'   ,'relaxaurus'): 'orserk',
+    ('kitsun'      ,'astegon'   ): 'shadowbeak'
+}
+
+only_same_breeds = [
+    'frostallion',
+    'jetragon',
+    'paladius',
+    'necromus',
+    'jormuntide ignis'
 ]
+
+pals = [
+    Pal(
+        index=i,
+        name=name,
+        power=power,
+        tiebreak=tiebreak_order.index(name),
+        unique=(name in uniques),
+        only_same=(name in only_same_breeds)
+    ) for i, (name, power) in enumerate(breed_powers.items())
+]
+
+by_index = {
+    p.index: p for p in pals
+}
+
+by_name = {
+    p.name: p for p in pals
+}
+
+regular_pals = [
+    p for p in pals if not p.unique and not p.only_same
+]
+
+
+def closest(power: int) -> Pal:
+    diffs = []
+    for pal in regular_pals:
+        diff = abs(power - pal.power)
+        tiebreak = pal.tiebreak
+        diffs.append((diff, tiebreak, pal))
+    return sorted(diffs)[0][2]
+
+
+power_to_offspring = [
+    closest(i) for i in range(0, 1501)
+]
+
+
+
+def breed_power(pal1, pal2):
+    return math.floor((pal1.power + pal2.power + 1) / 2)
+
+
+def unique_offspring(pal1: Pal, pal2: Pal):
+    if (pal1.name, pal2.name) in unique_combos:
+        offspring_name = unique_combos[(pal1.name, pal2.name)]
+        return by_name[offspring_name]
+    if (pal2.name, pal1.name) in unique_combos:
+        offspring_name = unique_combos[(pal2.name, pal1.name)]
+        return by_name[offspring_name]
+    return None
+
+
+def same_offspring(pal1: Pal, pal2: Pal):
+    if pal1 == pal2:
+        return pal1
+
+
+def regular_offspring(pal1: Pal, pal2: Pal):
+    power = breed_power(pal1, pal2)
+    return power_to_offspring(power)
+
+
+def offspring(pal1: Pal, pal2: Pal):
+    return (
+        unique_offspring(pal1, pal2)
+        or same_offspring(pal1, pal2)
+        or regular_offspring(pal1, pal2)
+    )
+
+
+n = len(pals)
+names = n * [ '' ]
+for i in range(0, n):
+    names[i] = by_index[i].name
+
+offspring_map = n**2 * [ 0 ]
+for i in range(0, n):
+    for j in range(0, n):
+        pal1 = by_index[i]
+        pal2 = by_index[j]
+        offspring_map[i * n + j] = offspring(pal1, pal2).index
+
+data = {
+    'names': names,
+    'offspring_map': offspring_map
+}
 
 json.dump(data, sys.stdout)
