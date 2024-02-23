@@ -83,23 +83,28 @@ def breed(X: list[Pal], Y: list[Pal], Z: list[Pal] | None = None, W: list[Pal] |
     if Z:
         XZ = _breed(X, Z)
         YZ = _breed(Y, Z)
+        XY_Z = _breed(XY, Z)
+        XZ_Y = _breed(XZ, Y)
+        YZ_X = _breed(YZ, X)
         if W:
             XW = _breed(X, W)
             YW = _breed(Y, W)
             ZW = _breed(Z, W)
-        YZ_X = _breed(YZ, X)
-        XY_Z = _breed(XY, Z)
-        if W:
             XY_W = _breed(XY, W)
             XZ_W = _breed(XZ, W)
             YZ_W = _breed(YZ, W)
+            YW_X = _breed(YW, X)
+            YW_Z = _breed(YW, Z)
             ZW_X = _breed(ZW, X)
             ZW_Y = _breed(ZW, Y)
             XY_Z_W = _breed(XY_Z, W)
             XY_W_Z = _breed(XY_W, Z)
+            XZ_Y_W = _breed(XZ_Y, W)
             XZ_W_Y = _breed(XZ_W, Y)
             YZ_X_W = _breed(YZ_X, W)
             YZ_W_X = _breed(YZ_W, X)
+            YW_X_Z = _breed(YW_X, Z)
+            YW_Z_X = _breed(YW_Z, X)
             ZW_X_Y = _breed(ZW_X, Y)
             ZW_Y_X = _breed(ZW_Y, X)
             XY_ZW = _breed(XY, ZW)
@@ -115,16 +120,22 @@ def breed(X: list[Pal], Y: list[Pal], Z: list[Pal] | None = None, W: list[Pal] |
             *ZW,
             *XY_Z,
             *XY_W,
+            *XZ_Y,
             *XZ_W,
             *YZ_X,
             *YZ_W,
+            *YW_X,
+            *YW_Z,
             *ZW_X,
             *ZW_Y,
             *XY_Z_W,
             *XY_W_Z,
+            *XZ_Y_W,
             *XZ_W_Y,
             *YZ_X_W,
             *YZ_W_X,
+            *YW_X_Z,
+            *YW_Z_X,
             *ZW_X_Y,
             *ZW_Y_X,
             *XY_ZW,
@@ -137,6 +148,7 @@ def breed(X: list[Pal], Y: list[Pal], Z: list[Pal] | None = None, W: list[Pal] |
             *XZ,
             *YZ,
             *XY_Z,
+            *XZ_Y,
             *YZ_X,
         ]
     else:
@@ -170,7 +182,6 @@ def fuzzy_pal(name):
 def group_represented(pal: Pal | None, group: list[Pal]):
     if pal is None:
         return False
-    g_indice = [p.index for p in group]
     if pal.parent1:
         return (
             group_represented(pal.parent1, group)
@@ -180,10 +191,9 @@ def group_represented(pal: Pal | None, group: list[Pal]):
         if p.index == pal.index:
             if p.gender == 0:
                 return True
-            if pal.gender == 0:
-                return True
             if p.gender == pal.gender:
                 return True
+    return False
 
 
 def cmp_names(p1: Pal, p2: Pal):
@@ -229,7 +239,7 @@ def parse_names(names: str | list[str]):
 
 
 def print_request(target: Pal, groups: list[list[Pal]]):
-    print(f'target:\n    {target} if target else "<any>"')
+    print(f'target:\n    {target if target else "<any>"}')
     for i, g in enumerate(groups):
         if len(g) > 16:
                 print(
